@@ -1,4 +1,4 @@
-# Intelligent RoadEye — Road Surface Defect Detection
+# Intelligent RoadEye - Road Surface Defect Detection
 
 ![Accuracy](https://img.shields.io/badge/Accuracy-82.2%25-brightgreen)
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
@@ -7,7 +7,7 @@
 ![CUDA](https://img.shields.io/badge/CUDA-Enabled-76B900)
 ![Status](https://img.shields.io/badge/Status-Active-success)
 
-> Upload a road image or video. Get real-time crack and pothole detection with a live analysis dashboard — severity scoring, defect distribution and trend charts.
+> Upload a road image or video. Get real-time crack and pothole detection with a live analysis dashboard - severity scoring, defect distribution and trend charts.
 
 Originally built for the Amaravati Drone Summit 2024 *(2nd Runner-up)*. Rebuilt in June 2026, PyTorch GPU training and a fully redesigned real-time dashboard.
 
@@ -27,25 +27,25 @@ Originally built for the Amaravati Drone Summit 2024 *(2nd Runner-up)*. Rebuilt 
 
 ## What It Does
 
-- ✅ VGG16 fine-tuned on a custom merged road defect dataset — 82.2% validation accuracy
-- ✅ Sliding window inference — 128×128 patches with 50% overlap across full frames
-- ✅ Real-time detection dashboard — live bounding boxes, detection summary, severity meter
-- ✅ Defect distribution donut chart — crack vs pothole breakdown
+- ✅ VGG16 fine-tuned on a custom merged road defect dataset - 82.2% validation accuracy
+- ✅ Sliding window inference - 128×128 patches with 50% overlap across full frames
+- ✅ Real-time detection dashboard - live bounding boxes, detection summary, severity meter
+- ✅ Defect distribution donut chart - crack vs pothole breakdown
 - ✅ Surface condition trend and defect count trend charts
-- ✅ Detected patch thumbnails — shows the actual regions flagged
+- ✅ Detected patch thumbnails - shows the actual regions flagged
 - ✅ Supports both image upload and video feed
 - ✅ Export report as JSON
-- ✅ GPU-accelerated inference (CUDA) — 130-160ms per frame on RTX 3050
+- ✅ GPU-accelerated inference (CUDA) - 130-160ms per frame on RTX 3050
 
 ---
 
 ## How It Works
 
 **Dataset preparation**
-Two Kaggle road defect datasets merged and balanced using `model/merge_dataset.py`. Original data had a severe class imbalance — 162 crack images vs 2,712 pothole images. Fixed by augmenting crack images to 800 using 8 augmentation strategies (flips, rotations, brightness shifts) and randomly sampling 800 pothole images. Final dataset: 800 crack + 800 pothole = 1,600 balanced images.
+Two Kaggle road defect datasets merged and balanced using `model/merge_dataset.py`. Original data had a severe class imbalance - 162 crack images vs 2,712 pothole images. Fixed by augmenting crack images to 800 using 8 augmentation strategies (flips, rotations, brightness shifts) and randomly sampling 800 pothole images. Final dataset: 800 crack + 800 pothole = 1,600 balanced images.
 
 **Model**
-VGG16 pretrained on ImageNet, fine-tuned with last 8 layers unfrozen. Added AdaptiveAvgPool2d to handle flexible input sizes, followed by a custom classifier head (512 → 256 → 128 → 2). Trained with mixed precision (float16) on NVIDIA RTX 3050 4GB — completed in 4.9 minutes.
+VGG16 pretrained on ImageNet, fine-tuned with last 8 layers unfrozen. Added AdaptiveAvgPool2d to handle flexible input sizes, followed by a custom classifier head (512 → 256 → 128 → 2). Trained with mixed precision (float16) on NVIDIA RTX 3050 4GB - completed in 4.9 minutes.
 
 **Inference**
 Sliding window scans the uploaded image in 128×128 patches with 64-pixel stride. Each patch is classified independently. Detections above 75% confidence are drawn as bounding boxes. Surface condition severity is computed from defect area ratio.
@@ -70,12 +70,12 @@ Sliding window scans the uploaded image in 128×128 patches with 64-pixel stride
 
 ## Dataset
 
-Both datasets are from Kaggle — not included in this repo due to size (~2GB combined). Download and place as described below before training.
+Both datasets are from Kaggle - not included in this repo due to size (~2GB combined). Download and place as described below before training.
 
-**Dataset 1** — [Potholes or Cracks on Road Image Dataset](https://www.kaggle.com/datasets/dataclusterlabs/potholes-or-cracks-on-road-image-dataset)
+**Dataset 1** - [Potholes or Cracks on Road Image Dataset](https://www.kaggle.com/datasets/dataclusterlabs/potholes-or-cracks-on-road-image-dataset)
 → Place in: `data/raw/Potholes or Cracks on Road Image Dataset/`
 
-**Dataset 2** — [Potholes, Cracks and Open Manholes](https://www.kaggle.com/datasets/sabidrahman/pothole-cracks-and-openmanhole)
+**Dataset 2** - [Potholes, Cracks and Open Manholes](https://www.kaggle.com/datasets/sabidrahman/pothole-cracks-and-openmanhole)
 → Place in: `data/raw/potholes, cracks and openmanholes (Road Hazards)/`
 
 Run `python model/merge_dataset.py` to merge, balance and augment automatically.
@@ -122,7 +122,7 @@ intelligent_roadeye/
 │   └── predict.py          # Inference engine
 ├── frontend/
 │   └── index.html          # Dashboard UI
-├── data/                   # Not in repo — download datasets
+├── data/                   # Not in repo - download datasets
 ├── screenshots/
 ├── README.md
 └── ROADMAP.md
@@ -138,7 +138,7 @@ intelligent_roadeye/
 
 ## Limitations
 
-The 82.2% accuracy reflects the current balanced dataset size (1,600 images). A larger and more diverse road dataset would push this higher. The sliding window approach works well for close-up road images — aerial drone footage with mixed backgrounds (vegetation, vehicles) can reduce precision. The next version will address this with a larger dataset and a dedicated road region detector.
+The 82.2% accuracy reflects the current balanced dataset size (1,600 images). A larger and more diverse road dataset would push this higher. The sliding window approach works well for close-up road images - aerial drone footage with mixed backgrounds (vegetation, vehicles) can reduce precision. The next version will address this with a larger dataset and a dedicated road region detector.
 
 ---
 
@@ -148,4 +148,4 @@ See [ROADMAP.md](ROADMAP.md)
 
 ---
 
-*Originally developed: October 2024 — Rebuilt and open-sourced: June 2026*
+*Originally developed: October 2024 - Rebuilt and open-sourced: June 2026*
