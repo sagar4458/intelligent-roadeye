@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RoadEye Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      font-size: 13px;
+    }
+
+    /* ── Top Bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      padding: 10px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .topbar h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+    .topbar-actions { display: flex; gap: 8px; }
+    .btn {
+      padding: 6px 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #f5f5f5; }
+    .btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .btn.primary:hover { background: #1d4ed8; }
+
+    /* ── Layout ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 210px 1fr 240px;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      padding: 10px;
+      min-height: calc(100vh - 50px);
+    }
+
+    /* ── Panels ── */
+    .panel {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e8e8e8;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* ── Left Panel ── */
+    .left-panel { grid-column: 1; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 10px; }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+      font-size: 12px;
+      border-bottom: 1px solid #f8f8f8;
+    }
+    .status-label { color: #777; }
+    .status-value { font-weight: 600; color: #1a1a2e; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .dot.green { background: #22c55e; }
+    .dot.yellow { background: #f59e0b; }
+
+    .model-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      font-size: 12px;
+      border-bottom: 1px solid #f8f8f8;
+    }
+    .model-label { color: #777; }
+    .model-value { font-weight: 600; }
+    .cuda-badge {
+      background: #dcfce7;
+      color: #16a34a;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .view-option { display: flex; align-items: center; gap: 7px; padding: 3px 0; font-size: 12px; cursor: pointer; }
+    .view-option input[type=checkbox] { accent-color: #2563eb; width: 13px; height: 13px; }
+
+    /* ── Center: Live Feed ── */
+    .center-panel { grid-column: 2; grid-row: 1; }
+    .feed-container {
+      position: relative;
+      background: #111;
+      border-radius: 6px;
+      overflow: hidden;
+      min-height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #liveFrame {
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      display: block;
+    }
+    .feed-placeholder {
+      color: #555;
+      text-align: center;
+      padding: 40px;
+    }
+    .feed-placeholder .icon { font-size: 48px; margin-bottom: 10px; }
+    .frame-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    /* ── Upload Zone ── */
+    .upload-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .upload-zone:hover { border-color: #2563eb; background: #eff6ff; }
+    .upload-zone p { color: #64748b; font-size: 12px; margin-top: 6px; }
+    #fileInput { display: none; }
+
+    /* ── Right Panel ── */
+    .right-panel { grid-column: 3; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 10px; }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 12px;
+    }
+    .summary-label { color: #555; }
+    .summary-value { font-weight: 700; font-size: 14px; }
+    .badge-moderate { color: #f59e0b; font-weight: 700; }
+    .badge-good     { color: #22c55e; font-weight: 700; }
+    .badge-critical { color: #ef4444; font-weight: 700; }
+
+    /* Donut chart */
+    .donut-wrap { display: flex; align-items: center; gap: 14px; padding: 8px 0; }
+    #donutChart { width: 90px !important; height: 90px !important; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* Severity bar */
+    .severity-bar-wrap { margin-top: 4px; }
+    .severity-track {
+      height: 10px;
+      background: linear-gradient(to right, #22c55e, #f59e0b, #ef4444);
+      border-radius: 5px;
+      position: relative;
+      margin: 6px 0;
+    }
+    .severity-thumb {
+      position: absolute;
+      top: -3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border: 3px solid #f59e0b;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      transition: left 0.5s;
+    }
+    .severity-labels { display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+    .severity-level-text { font-weight: 700; font-size: 13px; margin-bottom: 4px; color: #f59e0b; }
+
+    /* ── Bottom Row ── */
+    .bottom-row { grid-column: 1 / 4; display: grid; grid-template-columns: 340px 1fr 1fr; gap: 10px; }
+
+    /* Patch grid */
+    .patch-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .patch-item { text-align: center; }
+    .patch-item img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+    }
+    .patch-label { font-size: 10px; color: #555; margin-top: 2px; }
+
+    /* ── Status Bar ── */
+    .statusbar {
+      background: #fff;
+      border-top: 1px solid #e0e0e0;
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #666;
+    }
+    .running-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 5px;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .export-btn { color: #2563eb; cursor: pointer; font-weight: 600; text-decoration: none; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1>RoadEye Dashboard</h1>
+  <div class="topbar-actions">
+    <button class="btn" id="pauseBtn" onclick="togglePause()">Pause</button>
+    <button class="btn" onclick="takeScreenshot()">Screenshot</button>
+    <button class="btn primary" onclick="document.getElementById('fileInput').click()">Upload</button>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="main-grid">
+
+  <!-- Left Panel -->
+  <div class="left-panel">
+
+    <!-- System Status -->
+    <div class="panel">
+      <div class="panel-title">System Status</div>
+      <div class="status-row"><span class="status-label">Connection</span><span class="status-value"><span class="dot green"></span>Connected</span></div>
+      <div class="status-row"><span class="status-label">GPS</span><span class="status-value" id="gpsVal">Locked (18)</span></div>
+      <div class="status-row"><span class="status-label">Battery</span><span class="status-value">74 %</span></div>
+      <div class="status-row"><span class="status-label">Altitude</span><span class="status-value">28.6 m</span></div>
+      <div class="status-row"><span class="status-label">Speed</span><span class="status-value">3.9 m/s</span></div>
+      <div class="status-row"><span class="status-label">Date &amp; Time</span><span class="status-value" id="dateVal">—</span></div>
+      <div class="status-row"><span class="status-label">Frame Rate</span><span class="status-value" id="fpsVal">— FPS</span></div>
+    </div>
+
+    <!-- Model Info -->
+    <div class="panel">
+      <div class="panel-title">Model Info</div>
+      <div class="model-row"><span class="model-label">Model</span><span class="model-value">VGG16</span></div>
+      <div class="model-row"><span class="model-label">Framework</span><span class="model-value">TensorFlow / Keras</span></div>
+      <div class="model-row"><span class="model-label">Input Size</span><span class="model-value">224 × 224</span></div>
+      <div class="model-row"><span class="model-label">Classes</span><span class="model-value">Crack, Pothole</span></div>
+      <div class="model-row"><span class="model-label">CUDA</span><span class="model-value"><span class="cuda-badge">Enabled</span></span></div>
+      <div class="model-row"><span class="model-label">Inference Time</span><span class="model-value" id="inferenceVal">— ms</span></div>
+    </div>
+
+    <!-- View Options -->
+    <div class="panel">
+      <div class="panel-title">View Options</div>
+      <label class="view-option"><input type="checkbox" id="showDetections" checked> Show Detections</label>
+      <label class="view-option"><input type="checkbox" id="showHeatmap" checked> Show Heatmap</label>
+      <label class="view-option"><input type="checkbox" id="showPatches"> Show Patches</label>
+    </div>
+
+  </div>
+
+  <!-- Center Panel -->
+  <div class="panel center-panel">
+    <div class="panel-title">Live Feed — Drone View</div>
+    <div class="feed-container" id="feedContainer">
+      <div class="feed-placeholder" id="feedPlaceholder">
+        <div class="icon">🛸</div>
+        <div style="font-weight:600;color:#aaa;">Upload an image or video to begin analysis</div>
+        <p>Supported: JPG, PNG, MP4, AVI</p>
+        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+          <div style="font-size:24px;">📁</div>
+          <p>Click to upload or drag and drop</p>
+        </div>
+      </div>
+      <img id="liveFrame" style="display:none;" alt="Live Feed"/>
+      <div class="frame-badge" id="frameBadge" style="display:none;">Frame ID: —</div>
+    </div>
+    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov" onchange="handleUpload(event)"/>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+
+    <!-- Detection Summary -->
+    <div class="panel">
+      <div class="panel-title">Detection Summary</div>
+      <div class="summary-row"><span class="summary-label">Cracks Detected</span><span class="summary-value" id="cracksVal">0</span></div>
+      <div class="summary-row"><span class="summary-label">Pothole Candidates</span><span class="summary-value" style="color:#f59e0b" id="potholesVal">0</span></div>
+      <div class="summary-row"><span class="summary-label">Surface Condition</span><span class="summary-value badge-good" id="conditionVal">—</span></div>
+      <div class="summary-row"><span class="summary-label">Confidence (Avg.)</span><span class="summary-value" id="confVal">—</span></div>
+      <div class="summary-row"><span class="summary-label">Total Area Analyzed</span><span class="summary-value" id="areaVal">—</span></div>
+    </div>
+
+    <!-- Defect Distribution -->
+    <div class="panel">
+      <div class="panel-title">Defect Distribution</div>
+      <div class="donut-wrap">
+        <canvas id="donutChart"></canvas>
+        <div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Crack (<span id="crackPct">0</span>%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Pothole (<span id="potholePct">0</span>%)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Severity Level -->
+    <div class="panel">
+      <div class="panel-title">Severity Level</div>
+      <div class="severity-level-text" id="severityText">—</div>
+      <div class="severity-bar-wrap">
+        <div class="severity-track">
+          <div class="severity-thumb" id="severityThumb" style="left:50%"></div>
+        </div>
+        <div class="severity-labels"><span>Low</span><span>Moderate</span><span>High</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Row -->
+  <div class="bottom-row">
+
+    <!-- Detected Patches -->
+    <div class="panel">
+      <div class="panel-title">Detected Patches (Latest)</div>
+      <div class="patch-grid" id="patchGrid">
+        <div style="grid-column:1/5;text-align:center;color:#aaa;padding:20px;font-size:12px;">No detections yet</div>
+      </div>
+    </div>
+
+    <!-- Surface Condition Trend -->
+    <div class="panel">
+      <div class="panel-title">Surface Condition Trend</div>
+      <canvas id="conditionChart" height="90"></canvas>
+    </div>
+
+    <!-- Defect Count Trend -->
+    <div class="panel">
+      <div class="panel-title">Defect Count Trend</div>
+      <canvas id="defectChart" height="90"></canvas>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Status Bar -->
+<div class="statusbar">
+  <div><span class="running-dot" id="runningDot" style="display:none;"></span><span id="statusText">Ready — upload an image or video to start analysis</span></div>
+  <a class="export-btn" onclick="exportReport()">⬇ Export Report</a>
+</div>
+
+<script>
+// ── Charts ────────────────────────────────────────────────────────────────────
+const donutChart = new Chart(document.getElementById("donutChart"), {
+  type: "doughnut",
+  data: {
+    labels: ["Crack", "Pothole"],
+    datasets: [{ data: [0, 0], backgroundColor: ["#ef4444", "#f59e0b"], borderWidth: 2 }]
+  },
+  options: { responsive: false, plugins: { legend: { display: false } }, cutout: "65%" }
+});
+
+const conditionChart = new Chart(document.getElementById("conditionChart"), {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [{
+      label: "Score",
+      data: [],
+      borderColor: "#2563eb",
+      backgroundColor: "rgba(37,99,235,0.08)",
+      tension: 0.3,
+      pointRadius: 0,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { min: 0, max: 1, ticks: { font: { size: 10 } } },
+      x: { ticks: { font: { size: 10 }, maxTicksLimit: 6 } }
+    },
+    plugins: { legend: { labels: { font: { size: 11 } } } }
+  }
+});
+
+const defectChart = new Chart(document.getElementById("defectChart"), {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [
+      { label: "Cracks",   data: [], borderColor: "#ef4444", tension: 0.3, pointRadius: 0 },
+      { label: "Potholes", data: [], borderColor: "#f59e0b", tension: 0.3, pointRadius: 0 },
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { ticks: { font: { size: 10 } } },
+      x: { ticks: { font: { size: 10 }, maxTicksLimit: 6 } }
+    },
+    plugins: { legend: { labels: { font: { size: 11 } } } }
+  }
+});
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let paused    = false;
+let pollTimer = null;
+let frameCounter = 0;
+
+// ── Clock ──────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById("dateVal").textContent =
+    now.toLocaleDateString("en-GB").replace(/\//g, "-") + " " +
+    now.toTimeString().slice(0, 8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Upload ─────────────────────────────────────────────────────────────────────
+async function handleUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  document.getElementById("statusText").textContent = "Uploading and analysing...";
+  document.getElementById("runningDot").style.display = "inline-block";
+
+  const res  = await fetch("/api/upload", { method: "POST", body: formData });
+  const data = await res.json();
+
+  if (data.result_image) {
+    // Image result
+    showFrame(data.result_image);
+    pollState();
+  } else if (data.type === "video") {
+    // Video stream
+    const src = `/api/video_feed/${encodeURIComponent(data.filename)}`;
+    showFrame(src);
+    startPolling();
+  }
+}
+
+function showFrame(src) {
+  document.getElementById("feedPlaceholder").style.display = "none";
+  const img = document.getElementById("liveFrame");
+  img.style.display = "block";
+  img.src = src;
+  document.getElementById("frameBadge").style.display = "block";
+}
+
+// ── Poll State ─────────────────────────────────────────────────────────────────
+async function pollState() {
+  if (paused) return;
+  const res  = await fetch("/api/state");
+  const data = await res.json();
+  updateDashboard(data);
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(pollState, 800);
+}
+
+// ── Update Dashboard ───────────────────────────────────────────────────────────
+function updateDashboard(d) {
+  const summary   = d.summary   || {};
+  const condition = d.condition || {};
+
+  document.getElementById("cracksVal").textContent   = summary.cracks_detected    || 0;
+  document.getElementById("potholesVal").textContent = summary.pothole_candidates || 0;
+  document.getElementById("confVal").textContent     = summary.avg_confidence ? (summary.avg_confidence * 100).toFixed(1) + " %" : "—";
+  document.getElementById("areaVal").textContent     = d.total_area ? d.total_area + " m²" : "—";
+  document.getElementById("inferenceVal").textContent = d.inference_time_ms ? d.inference_time_ms + " ms" : "—";
+  document.getElementById("frameBadge").textContent  = "Frame ID: " + (d.frame_id || "—");
+
+  // Condition badge
+  const lvl  = condition.level || "—";
+  const valEl = document.getElementById("conditionVal");
+  valEl.textContent = lvl;
+  valEl.className = "summary-value " +
+    (lvl === "Good" ? "badge-good" : lvl === "Critical" ? "badge-critical" : "badge-moderate");
+
+  // Severity
+  document.getElementById("severityText").textContent = lvl;
+  const ratio = condition.defect_ratio || 0;
+  document.getElementById("severityThumb").style.left = Math.min(ratio * 100, 95) + "%";
+
+  // Donut
+  const cp = summary.crack_pct   || 0;
+  const pp = summary.pothole_pct || 0;
+  donutChart.data.datasets[0].data = [cp, pp];
+  donutChart.update("none");
+  document.getElementById("crackPct").textContent   = cp;
+  document.getElementById("potholePct").textContent = pp;
+
+  // Patches
+  if (d.patches && d.patches.length > 0) {
+    const grid = document.getElementById("patchGrid");
+    grid.innerHTML = "";
+    d.patches.slice(0, 8).forEach(p => {
+      const item = document.createElement("div");
+      item.className = "patch-item";
+      item.innerHTML = `<img src="data:image/jpeg;base64,${p.b64}" alt="${p.label}"/>
+                        <div class="patch-label">${p.label} ${p.confidence}</div>`;
+      grid.appendChild(item);
+    });
+  }
+
+  // Trend charts
+  if (d.history && d.history.length > 0) {
+    const labels = d.history.map((_, i) => i);
+    conditionChart.data.labels   = labels;
+    conditionChart.data.datasets[0].data = d.history;
+    conditionChart.update("none");
+
+    defectChart.data.labels = labels;
+    defectChart.data.datasets[0].data = d.crack_trend   || [];
+    defectChart.data.datasets[1].data = d.pothole_trend || [];
+    defectChart.update("none");
+  }
+
+  // Status
+  document.getElementById("statusText").textContent =
+    d.running ? "Analysis running" : "Analysis complete";
+  document.getElementById("runningDot").style.display = d.running ? "inline-block" : "none";
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────────
+function togglePause() {
+  paused = !paused;
+  document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
+  if (!paused && pollTimer) startPolling();
+}
+
+function takeScreenshot() {
+  const link = document.createElement("a");
+  link.download = "roadeye_screenshot.png";
+  // Simple canvas capture of the feed image
+  const img    = document.getElementById("liveFrame");
+  const canvas = document.createElement("canvas");
+  canvas.width  = img.naturalWidth  || 800;
+  canvas.height = img.naturalHeight || 600;
+  canvas.getContext("2d").drawImage(img, 0, 0);
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+function exportReport() {
+  fetch("/api/state").then(r => r.json()).then(d => {
+    const blob = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "roadeye_report.json";
+    a.click();
+  });
+}
+</script>
+</body>
+</html>

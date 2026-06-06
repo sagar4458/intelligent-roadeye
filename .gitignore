@@ -1,0 +1,11 @@
+# Datasets — too large for GitHub
+data/
+
+# Model weights
+model/roadeye_vgg16.pth
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.vscode/
