@@ -9,7 +9,7 @@
 
 > Upload a road image or video. Get real-time crack and pothole detection with a live analysis dashboard — severity scoring, defect distribution and trend charts.
 
-Originally built for the Amaravati Drone Summit 2024 *(2nd Runner-up)*. Rebuilt from scratch in June 2026 with a properly merged and balanced dataset, PyTorch GPU training and a fully redesigned real-time dashboard.
+Originally built for the Amaravati Drone Summit 2024 *(2nd Runner-up)*. Rebuilt in June 2026, PyTorch GPU training and a fully redesigned real-time dashboard.
 
 ---
 
