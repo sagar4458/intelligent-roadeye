@@ -8,4 +8,4 @@ model/roadeye_vgg16.pth
 venv/
 __pycache__/
 *.pyc
-.vscode/
+.vscode/"venv/" 
